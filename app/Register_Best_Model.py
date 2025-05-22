@@ -1,57 +1,62 @@
 import mlflow
 from mlflow.tracking import MlflowClient
+import pandas as pd
+from joblib import dump
+import os
 
+def seleccionar_y_guardar_mejor_modelo(output_path="../Models/best_model_production.pkl"):
+    """
+    Busca el modelo con mejor accuracy registrado en MLflow
+    y lo guarda en el path especificado.
+    """
+    mlflow.set_tracking_uri("file:../Experiments")
+    client = MlflowClient()
 
-# === CONFIGURACIÓN ===
-mlflow.set_tracking_uri("file:./Experiments")
-EXPERIMENT_NAME = "XGBoost_Experiment"
-MODEL_NAME = "Best_Production_Model"
-RUN_NAME = "XGBoost"
+    # Obtener todos los experimentos y sus runs finalizados
+    experiments = mlflow.search_experiments()
+    all_runs = []
 
+    for exp in experiments:
+        runs = client.search_runs(
+            experiment_ids=[exp.experiment_id],
+            filter_string="attributes.status = 'FINISHED'"
+        )
+        for run in runs:
+            all_runs.append({
+                "run_id": run.info.run_id,
+                "experiment_name": exp.name,
+                "run_name": run.data.tags.get("mlflow.runName", None),
+                "accuracy": run.data.metrics.get("accuracy", None),
+                "roc_auc": run.data.metrics.get("roc_auc", None)
+            })
 
-# === CLIENTE ===
-client = MlflowClient()
+    df = pd.DataFrame(all_runs)
+    df_filtered = df.dropna(subset=["accuracy"])
+    df_sorted = df_filtered.sort_values(by="accuracy", ascending=False)
 
+    if df_sorted.empty:
+        print("❌ No se encontró ningún modelo con métricas registradas.")
+        return
 
-experiments = mlflow.search_experiments()
-print("Experiments disponibles:")
-for exp in experiments:
-    print(f"- {exp.name}")
+    # Mejor run
+    best_run_id = df_sorted.iloc[0]["run_id"]
 
+    try:
+        # Detectar artefactos del run
+        artifacts = client.list_artifacts(best_run_id)
+        model_dirs = [a.path for a in artifacts if a.is_dir]
 
+        if not model_dirs:
+            print("❌ No se encontró modelo registrado en el mejor run.")
+            return
 
+        # Cargar y guardar
+        model_uri = f"runs:/{best_run_id}/{model_dirs[0]}"
+        best_model = mlflow.sklearn.load_model(model_uri)
 
-# === Obtener ID del experimento ===
-experiment = client.get_experiment_by_name(EXPERIMENT_NAME)
-if experiment is None:
-    raise ValueError(f"No se encontró el experimento '{EXPERIMENT_NAME}'")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        dump(best_model, output_path)
+        print(f"✅ Mejor modelo guardado en {output_path}")
 
-# === Buscar runs y elegir el mejor (por AUC, por ejemplo) ===
-runs = client.search_runs(
-    experiment_ids=[experiment.experiment_id],
-    filter_string=f"tags.mlflow.runName = '{RUN_NAME}'",
-    order_by=["metrics.roc_auc DESC"]
-)
-
-if not runs:
-    raise ValueError(f"No se encontraron runs con nombre '{RUN_NAME}'")
-
-best_run = runs[0]
-run_id = best_run.info.run_id
-print(f"✅ Mejor run encontrado: {run_id}")
-print(f"AUC: {best_run.data.metrics['roc_auc']:.4f}")
-print(f"Accuracy: {best_run.data.metrics['accuracy']:.4f}")
-
-# === Registrar modelo ===
-model_uri = f"runs:/{run_id}/xgboost_pipeline_v1"
-result = mlflow.register_model(model_uri=model_uri, name=MODEL_NAME)
-print(f"📦 Modelo registrado: {MODEL_NAME} (versión {result.version})")
-
-# === Promover modelo a producción ===
-client.transition_model_version_stage(
-    name=MODEL_NAME,
-    version=result.version,
-    stage="Production",
-    archive_existing_versions=True
-)
-print(f"🚀 Modelo promovido a producción ✅")
+    except Exception as e:
+        print(f"❌ Error al cargar o guardar el modelo: {e}")

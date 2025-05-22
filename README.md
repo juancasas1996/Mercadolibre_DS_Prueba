@@ -91,7 +91,7 @@ El mejor modelo fue seleccionado automáticamente por métrica.
 ## 🚀 5. Despliegue con Streamlit
 
 Una aplicación simple desarrollada con **Streamlit** permite:
-- Subir un archivo CSV similar a `X_test` raw
+- Subir un archivo .jsonlunes similar a `X_test` raw
 - Obtener predicciones y descargar el archivo con resultados
 - Acceso protegido con contraseña: `Meli`
 
@@ -141,23 +141,16 @@ MercadoLibre_Test/
 
 
 
-## 🧠 7. Justificación de la métrica ROC AUC
-
-Se eligió **ROC AUC** como métrica principal junto a Accuracy porque:
-- Proporciona una visión balanceada del desempeño ante clases desbalanceadas.
-- Evalúa la capacidad del modelo para rankear correctamente observaciones.
-- Es robusta ante cambios de umbral de decisión.
-
 ---
 
-## ⏳ 8. Pendientes
+## ⏳ 7. Pendientes
 
 - Finalizar el contenedor Docker para facilitar el despliegue reproducible.
 - Optimizar entrenamiento de modelos más pesados si se dispone de mayor capacidad.
 
 ---
 
-## ⚙️ 9. Requisitos
+## ⚙️ 8. Requisitos
 
 - Python 3.11+
 - `scikit-learn`, `xgboost`, `streamlit`, `mlflow`, `sentence-transformers`, `pandas`, `matplotlib`, `joblib`

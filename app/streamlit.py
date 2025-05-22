@@ -3,7 +3,36 @@ import pandas as pd
 import pickle
 from joblib import dump, load
 import io
+from Register_Best_Model import seleccionar_y_guardar_mejor_modelo
 import base64
+
+import pandas as pd
+from collections import Counter
+import sys
+import os
+import ast
+import json
+import pandas as pd
+import numpy as np
+import ast
+import joblib
+from Data_Processing import preprocess, procesar_test
+from sentence_transformers import SentenceTransformer
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+
+
+
+pd.set_option('display.max_columns', None)
+
+
+
+
+
 
 # === Contraseña simple ===
 PASSWORD_CORRECTA = "Meli"
@@ -29,8 +58,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+seleccionar_y_guardar_mejor_modelo("../Models/best_model_production.pkl")
 
-# Carga del modelo .pkl
+
+
+
+
+
+
+# === Cargar el modelo
 @st.cache_resource
 def cargar_modelo():
     return load('../Models/best_model_production.pkl')
@@ -38,14 +74,21 @@ def cargar_modelo():
 modelo = cargar_modelo()
 
 # Subida del archivo CSV
-archivo_csv = st.file_uploader("Sube tu archivo CSV", type="csv")
+archivo_json = st.file_uploader("Sube tu archivo .jsonlines", type=".jsonlines")
 
 # Inicializamos el DataFrame
 df = None
 
 # Si se subió un archivo
-if archivo_csv is not None:
-    df = pd.read_csv(archivo_csv)
+if archivo_json is not None:
+
+    # Leer cada línea del archivo como JSON
+    lineas = archivo_json.readlines()
+    json_list = [json.loads(line.decode("utf-8")) for line in lineas]
+
+    df = pd.json_normalize(json_list)
+    df = procesar_test(df)
+
     st.write("Vista previa del archivo:")
     st.dataframe(df)
 
@@ -56,7 +99,8 @@ if archivo_csv is not None:
             predicciones = modelo.predict(df)
 
             # Agrega la columna de predicciones
-            df['prediccion'] = predicciones
+            df['condition'] = predicciones
+            df['condition'] = df["condition"].map({0: "used", 1: "new"})
 
             st.success("¡Predicciones generadas!")
             st.dataframe(df)
