@@ -1,102 +1,108 @@
-Mercado Libre - Clasificación de Productos Nuevos vs Usados
+# 🛒 Mercado Libre - Clasificación de Productos Nuevos vs Usados
 
-Este proyecto busca predecir si un producto listado en Mercado Libre es nuevo o usado, aplicando un pipeline completo de ciencia de datos: exploración, limpieza, ingeniería de variables, modelado, evaluación y despliegue.
+Este proyecto busca predecir si un producto listado en Mercado Libre es **nuevo** o **usado**, implementando un pipeline completo de ciencia de datos: exploración, limpieza, ingeniería de variables, modelado, evaluación y despliegue.
 
-⸻
+---
 
-1. Dataset
+## 📁 1. Dataset
 
-El conjunto de datos original contiene descripciones, información de pagos, métodos de pago, precios, atributos, entre otros campos, muchos de ellos anidados en listas o diccionarios.
+El dataset contiene información detallada de publicaciones, incluyendo:
+- Descripciones y garantías
+- Métodos de pago
+- Atributos y precios
+- Fechas, ubicaciones y más
 
-⸻
+Muchos campos vienen anidados como **listas** o **diccionarios**, lo que motivó un procesamiento profundo.
 
-2. Exploración y Limpieza (Notebook: 01_EDA.ipynb)
+---
 
-Tratamiento de Columnas Complejas (listas/diccionarios)
-	•	descriptions: se extrajo description_id.
-	•	non_mercado_pago_payment_methods: se extrajo el tipo de pago principal. Se analizó la distribución de tipos de tarjeta y se agruparon todas en un solo grupo: “Tarjeta”.
+## 🔍 2. Exploración y Limpieza (`01_EDA.ipynb`)
 
-Columnas tipo lista:
+### 🔹 Columnas Complejas (listas/diccionarios)
+- `descriptions`: Se extrajo `description_id`.
+- `non_mercado_pago_payment_methods`: Se extrajo el método de pago principal. Agrupación de métodos relacionados con tarjetas bajo “Tarjeta”.
 
-Se analizaron: sub_status, variations, deal_ids, attributes, coverage_areas, shipping.methods, shipping.tags. Se definió acción según % de vacíos y su relación con la variable objetivo (condition). Se generaron variables binarias como has_variations, has_attributes, y se eliminaron otras.
+### 🔹 Columnas tipo lista
+Columnas como `sub_status`, `variations`, `deal_ids`, `attributes`, etc., fueron evaluadas según su % de vacíos y su señal predictiva (`condition`). Resultado:
+- Se eliminaron columnas con demasiados nulos o sin señal.
+- Se crearon variables binarias como `has_variations`, `has_attributes`.
 
-Columna tags:
-	•	Se encontró un 75% de filas con valores.
-	•	Se aplicó OneHotEncoding tras binarización con MultiLabelBinarizer.
+### 🔹 Columna `tags`
+- 75.10% de filas contenían tags útiles.
+- Se aplicó `MultiLabelBinarizer` + `OneHotEncoding`.
 
-Valores nulos:
-	•	Se estandarizó None, none, '' a np.nan.
-	•	Se eliminaron columnas con >95% de nulos y sin información relevante.
+### 🔹 Valores nulos
+- Estandarización de `None`, `none`, `''` a `np.nan`.
+- Se eliminaron columnas con más del 95% de nulos si no tenían valor predictivo.
 
-Columnas constantes:
-	•	Se identificaron y eliminaron columnas con un único valor no nulo.
+### 🔹 Columnas constantes y casi constantes
+- Se eliminaron columnas con un solo valor (ej: `site_id`, `thumbnail`, etc.).
+- También columnas con 95% del mismo valor.
 
-Columnas con valores únicos en 95%+
-	•	Se eliminaron columnas como title, thumbnail, secure_thumbnail, permalink, etc.
+### 🔹 Columna `warranty` (60% vacía)
+- Se aplicó **NLP + Clustering**:
+  - Embeddings con `sentence-transformers/all-MiniLM-L12-v2`.
+  - Clustering con `KMeans(n_clusters=4)`.
+  - Se creó una variable binaria: `has_warranty`.
 
-Columna warranty (60% vacía):
-	•	Se aplicó NLP + Clustering:
-	•	Se usó el modelo sentence-transformers/all-MiniLM-L12-v2 para generar embeddings.
-	•	Clustering con KMeans(n_clusters=4).
-	•	Se creó la variable has_warranty usando el texto y reglas adicionales.
+### 🔹 Fechas y tiempos
+- De `date_created`: se extrajeron `year`, `month`, `day`, `is_weekend`, etc.
+- De `start_time` y `stop_time`: se generó `active_period`.
 
-Fechas y tiempos:
-	•	De date_created se extrajo: year, month, day, weekday, is_weekend.
-	•	De start_time y stop_time se extrajo la variable active_period.
+### 🔹 Agrupación y simplificación de categorías
+- `currency_id` → `Currency_ARS` (binaria)
+- `status` → agrupado como `active`, `paused`, `other`
+- `shipping.mode` → agrupación personalizada
 
-Agrupaciones y simplificaciones:
-	•	currency_id → binaria Currency_ARS.
-	•	status → “active”, “paused”, “other”.
-	•	shipping.mode → agrupación “me1” → “custom”.
-	•	seller_address.state.name y state.id eran duplicadas → se eliminó una.
+### 🔹 Correlaciones fuertes
+- `price` ≈ `base_price` → se eliminó uno
+- `initial_quantity` ≈ `available_quantity` → se eliminó uno
+- `seller_address.state.id` y `.name` eran equivalentes → se eliminó uno
 
-Correlaciones numéricas:
-	•	Se encontró alta correlación entre base_price y price, y entre initial_quantity y available_quantity. Se eliminaron las columnas redundantes.
+---
 
-⸻
+## 🤖 3. Modelos Entrenados
 
-3. Modelos (Notebooks: 03_, 04_, 05_)
+| Modelo               | Accuracy | ROC AUC |
+|----------------------|----------|---------|
+| **XGBoost**          | 0.9021   | 0.9663  |
+| Logistic Regression  | 0.8467   | 0.9207  |
+| Neural Network (MLP) | 0.8625   | 0.9358  |
 
-Modelos entrenados:
-	1.	XGBoost
-	•	Búsqueda de hiperparámetros con RandomizedSearchCV
-	•	Variables categóricas codificadas con OneHotEncoder (baja cardinalidad) y OrdinalEncoder (alta cardinalidad)
-	•	Mejores resultados:
-	•	Accuracy: 0.9021
-	•	ROC AUC: 0.9663
-	2.	Logistic Regression
-	•	GridSearch con regularización y codificación de variables.
-	•	Resultado:
-	•	Accuracy: 0.8467
-	•	ROC AUC: 0.9207
-	3.	Neural Network (MLPClassifier)
-	•	Se aplicó reducción del dataset por limitaciones de memoria.
-	•	Resultado:
-	•	Accuracy: 0.8625
-	•	ROC AUC: 0.9358
+### Detalles:
+- **XGBoost**: RandomizedSearchCV con codificación mixta (`OneHotEncoder` y `OrdinalEncoder`)
+- **Logistic Regression**: Submuestreo + GridSearch
+- **Neural Network**: Reducción del dataset por limitaciones de memoria
 
-⸻
+---
 
-4. Tracking con MLflow
-	•	Todos los experimentos fueron registrados usando MLflow.
-	•	Se guardaron hiperparámetros, métricas, modelos y artefactos (curvas ROC, learning curves).
-	•	El mejor modelo fue seleccionado automáticamente según accuracy y ROC AUC.
+## 📊 4. Tracking de Experimentos
 
-⸻
+Todos los experimentos fueron registrados en **MLflow**, incluyendo:
+- Hiperparámetros
+- Métricas (accuracy, ROC AUC)
+- Curvas ROC
+- Modelos entrenados
 
-5. Producción - App Streamlit
-	•	Se construyó una interfaz con Streamlit (App/streamlit.py) protegida por contraseña (Meli).
-	•	El usuario puede subir un CSV con el mismo formato de X_test.
-	•	La app devuelve un archivo descargable con las predicciones.
+El mejor modelo fue seleccionado automáticamente por métrica.
 
-⸻
+---
 
-6. Estructura de Carpetas
+## 🚀 5. Despliegue con Streamlit
+
+Una aplicación simple desarrollada con **Streamlit** permite:
+- Subir un archivo CSV similar a `X_test` raw
+- Obtener predicciones y descargar el archivo con resultados
+- Acceso protegido con contraseña: `Meli`
+
+---
+
+## 🗂️ 6. Estructura del Proyecto
 
 MercadoLibre_Test/
 ├── Data/
 │   ├── bronze/
-│   └── Gold/
+│   └── gold/
 │
 ├── Notebooks/
 │   ├── 01_EDA.ipynb
@@ -123,31 +129,36 @@ MercadoLibre_Test/
 │       ├── mlb_tags.pkl
 │       ├── warranty_cluster_map.pkl
 │
-└── Docker/ *(En desarrollo)*
-    ├── Dockerfile
-    ├── app.py
-    └── requirements.txt
+└── Docker/ (En desarrollo)
+├── Dockerfile
+├── app.py
+└── requirements.txt
 
 
-⸻
+---
 
-7. Pendientes
-	•	Finalizar Docker para permitir despliegue reproducible de la app.
-	•	Extender la validación cruzada para modelos complejos (si hay más recursos).
+## 🧠 7. Justificación de la métrica ROC AUC
 
-⸻
+Se eligió **ROC AUC** como métrica principal junto a Accuracy porque:
+- Proporciona una visión balanceada del desempeño ante clases desbalanceadas.
+- Evalúa la capacidad del modelo para rankear correctamente observaciones.
+- Es robusta ante cambios de umbral de decisión.
 
-8. Requisitos
-	•	Python 3.11
-	•	scikit-learn, xgboost, streamlit, mlflow, sentence-transformers, pandas, joblib, matplotlib
+---
 
-Instalación:
+## ⏳ 8. Pendientes
 
+- Finalizar el contenedor Docker para facilitar el despliegue reproducible.
+- Optimizar entrenamiento de modelos más pesados si se dispone de mayor capacidad.
+
+---
+
+## ⚙️ 9. Requisitos
+
+- Python 3.11+
+- `scikit-learn`, `xgboost`, `streamlit`, `mlflow`, `sentence-transformers`, `pandas`, `matplotlib`, `joblib`
+
+Instalación rápida:
+
+```bash
 pip install -r Docker/requirements.txt
-
-
-⸻
-
-9. Autor
-
-Ejercicio para Mercado Libre - Desarrollado por [Juan Sebastian Casas Castillo]
