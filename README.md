@@ -63,42 +63,78 @@ Columnas como `sub_status`, `variations`, `deal_ids`, `attributes`, etc., fueron
 
 ## 🤖 3. Modelos Entrenados
 
+### 📘 `03_Model_XGBoost.ipynb`
+Entrenamiento de un modelo **XGBoost** con:
+- Codificación mixta:
+  - `OrdinalEncoder` para columnas de alta cardinalidad (`seller_id`, `city.name`, `category_id`)
+  - `OneHotEncoder` para el resto de columnas categóricas
+  - `StandardScaler` para numéricas
+- Búsqueda con `RandomizedSearchCV`, 20 combinaciones probadas, validación con `StratifiedKFold`.
+- Registro de métricas (`accuracy`, `roc_auc`) y curva ROC en MLflow.
+- Modelo registrado con `input_example` y `signature`.
+
+---
+
+### 📘 `04_Model_Logistic.ipynb`
+Entrenamiento de **regresión logística** con:
+- Transformador personalizado `TopCityTransformer` para agrupar ciudades frecuentes.
+- Pipeline con detección automática de columnas categóricas y numéricas (`make_column_selector`).
+- Submuestreo del dataset para acelerar entrenamiento.
+- Optimización de hiperparámetros (`C`, `solver`) vía `RandomizedSearchCV`.
+- Registro completo del modelo y métricas en MLflow.
+
+---
+
+### 📘 `05_Neural_Network.ipynb`
+Entrenamiento de una **red neuronal simple (MLPClassifier)** con:
+- Agrupación de ciudades (`city_grouped`) y eliminación de columnas de alta cardinalidad.
+- Preprocesamiento tradicional con `OneHotEncoder` + `StandardScaler`.
+- Arquitectura: `hidden_layer_sizes=(64,)`, `max_iter=200`.
+- Registro directo del modelo sin tuning de hiperparámetros.
+
+---
+
+### 📘 `06_Compare.ipynb`
+- Recolecta todos los experimentos registrados en **MLflow**.
+- Compara métricas (`accuracy`, `roc_auc`) entre modelos.
+- Carga cada modelo y genera su **matriz de confusión** y `classification_report`.
+- Selecciona automáticamente el mejor modelo (según `accuracy`) y lo guarda como `best_model_production.pkl`.
+
+---
+
+### 📈 Resumen de resultados
+
 | Modelo               | Accuracy | ROC AUC |
 |----------------------|----------|---------|
 | **XGBoost**          | 0.9021   | 0.9663  |
-| Logistic Regression  | 0.8467   | 0.9207  |
 | Neural Network (MLP) | 0.8625   | 0.9358  |
-
-### Detalles:
-- **XGBoost**: RandomizedSearchCV con codificación mixta (`OneHotEncoder` y `OrdinalEncoder`)
-- **Logistic Regression**: Submuestreo + GridSearch
-- **Neural Network**: Reducción del dataset por limitaciones de memoria
+| Logistic Regression  | 0.8467   | 0.9207  |
 
 ---
 
 ## 📊 4. Tracking de Experimentos
 
-Todos los experimentos fueron registrados en **MLflow**, incluyendo:
-- Hiperparámetros
-- Métricas (accuracy, ROC AUC)
-- Curvas ROC
-- Modelos entrenados
+Todos los modelos y sus ejecuciones fueron registrados con **MLflow**, incluyendo:
+- Hiperparámetros evaluados
+- Métricas (`accuracy`, `roc_auc`)
+- Artefactos como curvas ROC
+- Modelos entrenados en cada run
 
-El mejor modelo fue seleccionado automáticamente por métrica.
+El mejor modelo es seleccionado automáticamente con base en su métrica.
 
 ---
 
 ## 🚀 5. Despliegue con Streamlit
 
-Una aplicación simple desarrollada con **Streamlit** permite:
-- Subir un archivo .jsonlunes similar a `X_test` raw
-- Obtener predicciones y descargar el archivo con resultados
+Una aplicación desarrollada con **Streamlit** permite:
+- Subir archivos `.jsonlines` similares a `X_test` raw
+- Procesar automáticamente los datos y obtener predicciones
+- Descargar los resultados en `.csv`
 - Acceso protegido con contraseña: `Meli`
 
 ---
 
 ## 🗂️ 6. Estructura del Proyecto
-
 
 <pre lang="markdown"><code>
 
@@ -139,14 +175,12 @@ MercadoLibre_Test/
 
 </code></pre>
 
-
-
 ---
 
 ## ⏳ 7. Pendientes
 
 - Finalizar el contenedor Docker para facilitar el despliegue reproducible.
-- Optimizar entrenamiento de modelos más pesados si se dispone de mayor capacidad.
+- Optimizar el entrenamiento de modelos más pesados si se dispone de mayor capacidad computacional.
 
 ---
 
