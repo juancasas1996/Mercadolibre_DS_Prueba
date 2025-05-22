@@ -99,6 +99,9 @@ Una aplicación simple desarrollada con **Streamlit** permite:
 
 ## 🗂️ 6. Estructura del Proyecto
 
+
+<pre lang="markdown"><code>
+```text
 MercadoLibre_Test/
 ├── Data/
 │   ├── bronze/
@@ -130,12 +133,13 @@ MercadoLibre_Test/
 │       ├── warranty_cluster_map.pkl
 │
 └── Docker/ (En desarrollo)
-├── Dockerfile
-├── app.py
-└── requirements.txt
+    ├── Dockerfile
+    ├── app.py
+    └── requirements.txt
+```
+</code></pre>
 
 
----
 
 ## 🧠 7. Justificación de la métrica ROC AUC
 
