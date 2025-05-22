@@ -101,7 +101,7 @@ Una aplicación simple desarrollada con **Streamlit** permite:
 
 
 <pre lang="markdown"><code>
-```text
+
 MercadoLibre_Test/
 ├── Data/
 │   ├── bronze/
@@ -136,7 +136,7 @@ MercadoLibre_Test/
     ├── Dockerfile
     ├── app.py
     └── requirements.txt
-```
+
 </code></pre>
 
 
