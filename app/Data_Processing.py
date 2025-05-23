@@ -142,11 +142,12 @@ def preprocess(df, is_train=True, mlb_tags=None, model=None, kmeans=None, cluste
 
 
 def procesar_test(X_test):
-    # Para test, cargando los modelos previamente guardados
+
+    base_path = "/app/artifacts/preprocessors" if os.path.exists("/app") else "../artifacts/preprocessors"
     model = SentenceTransformer('sentence-transformers/all-MiniLM-L12-v2')
-    kmeans = joblib.load("../artifacts/preprocessors/kmeans_warranty.pkl")
-    cluster_map = joblib.load("../artifacts/preprocessors/warranty_cluster_map.pkl")
-    mlb_tags = joblib.load("../artifacts/preprocessors/mlb_tags.pkl")
+    kmeans = joblib.load(f"{base_path}/kmeans_warranty.pkl")
+    cluster_map = joblib.load(f"{base_path}/warranty_cluster_map.pkl")
+    mlb_tags = joblib.load(f"{base_path}/mlb_tags.pkl")
 
     df = preprocess(X_test, is_train=False, model=model, kmeans=kmeans, cluster_map=cluster_map, mlb_tags=mlb_tags)
 

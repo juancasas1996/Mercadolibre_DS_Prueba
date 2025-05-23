@@ -1,0 +1,32 @@
+# Core
+numpy
+pandas
+joblib
+matplotlib
+seaborn
+
+# Machine Learning
+scikit-learn
+xgboost
+sentence-transformers
+
+# Estadística
+scipy
+
+# MLflow para tracking de experimentos
+mlflow
+
+# App frontend
+streamlit
+
+# Para cargar y procesar JSON
+orjson
+
+# Compatibilidad con modelos en producción
+protobuf<5
+
+# Recomendado para inferencia de modelos
+cloudpickle
+
+# Otros
+tqdm

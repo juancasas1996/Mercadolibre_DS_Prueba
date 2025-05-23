@@ -9,7 +9,13 @@ def seleccionar_y_guardar_mejor_modelo(output_path="../Models/best_model_product
     Busca el modelo con mejor accuracy registrado en MLflow
     y lo guarda en el path especificado.
     """
-    mlflow.set_tracking_uri("file:../Experiments")
+
+    # # Local
+    # mlflow.set_tracking_uri("file:../Experiments")
+
+    # Docker
+    tracking_path = "file:/app/Experiments" if os.path.exists("/app/Experiments") else "file:../Experiments"
+    mlflow.set_tracking_uri(tracking_path)
     client = MlflowClient()
 
     # Obtener todos los experimentos y sus runs finalizados

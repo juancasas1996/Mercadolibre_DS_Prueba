@@ -27,6 +27,11 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "mercado-libre-logo-1.png")
+
+
+
+
 pd.set_option('display.max_columns', None)
 
 
@@ -38,7 +43,7 @@ pd.set_option('display.max_columns', None)
 PASSWORD_CORRECTA = "Meli"
 
 
-st.image("mercado-libre-logo-1.png", width=800)
+st.image(LOGO_PATH, width=800)
 
 
 # Input de contraseña
@@ -58,9 +63,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-seleccionar_y_guardar_mejor_modelo("../Models/best_model_production.pkl")
+# seleccionar_y_guardar_mejor_modelo("../Models/best_model_production.pkl")
 
+path_docker = "Models/best_model_production.pkl"
+path_local = "../Models/best_model_production.pkl"
+output_path = path_docker if os.path.exists("/app") else path_local
 
+seleccionar_y_guardar_mejor_modelo(output_path)
 
 
 
@@ -69,7 +78,10 @@ seleccionar_y_guardar_mejor_modelo("../Models/best_model_production.pkl")
 # === Cargar el modelo
 @st.cache_resource
 def cargar_modelo():
-    return load('../Models/best_model_production.pkl')
+    path_docker = "/app/Models/best_model_production.pkl"
+    path_local = "../Models/best_model_production.pkl"
+    model_path = path_docker if os.path.exists(path_docker) else path_local
+    return load(model_path)
 
 modelo = cargar_modelo()
 
